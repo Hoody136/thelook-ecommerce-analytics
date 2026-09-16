@@ -1,0 +1,20 @@
+# .gitignore — files git must NEVER track.
+# The #1 rule of data engineering: credentials never touch GitHub.
+
+# --- Secrets & local config ---
+profiles.yml          # just in case one ever lands in the repo
+*.json                # service account keys are .json — block them all by default
+!packages.json        # ...except this harmless dbt file if it ever appears
+.env                  # environment variable files often contain keys
+
+# --- dbt build artefacts (regenerated on every run, no value in git) ---
+target/               # compiled SQL, run logs, the manifest
+dbt_packages/         # downloaded third-party packages
+logs/
+
+# --- Python ---
+.venv/                # your virtual sandbox — huge and machine-specific
+__pycache__/
+
+# --- Mac noise ---
+.DS_Store
