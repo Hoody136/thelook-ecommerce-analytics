@@ -1,0 +1,26 @@
+# ============================================================================
+# _sources.yml — the contract between this project and the outside world.
+# Every raw table we depend on is declared ONCE, here. Models reference these
+# via {{ source('thelook', 'orders') }} — never by hardcoded table names.
+# The leading underscore in the filename is convention: it sorts to the top
+# of the folder so the contract is the first thing you see.
+# ============================================================================
+
+version: 2
+
+sources:
+  - name: thelook                          # the source SYSTEM (like "shopify")
+    database: melodic-metrics-508711-u3    # our GCP project
+    schema: raw_thelook                    # the dataset our ingestion script filled
+    description: >
+      Raw copy of the bigquery-public-data.thelook_ecommerce dataset,
+      ingested 2024-01-01 onward (facts) with full dimension history.
+      See ingestion/01_copy_raw_thelook.sql for the contract.
+    tables:
+      - name: orders                       # one row per order header
+      - name: order_items                  # one row per order line — our revenue grain
+      - name: products                     # the product catalogue
+      - name: users                        # customer dimension (full history, by design)
+      - name: inventory_items              # physical stock units, receipt → sale
+      - name: events                       # clickstream: one row per pageview
+      - name: distribution_centers         # the fulfilment network
