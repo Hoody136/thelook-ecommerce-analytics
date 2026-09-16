@@ -1,0 +1,93 @@
+# ============================================================================
+# _staging.yml — documentation + quality gates for the staging layer.
+# (Convention note: Jaffle Shop uses one .yml per model; we use one per FOLDER.
+#  Both are legal — for 7 models, one file is easier to review in a PR.)
+#
+# Every test below is one of your Layer 1 audit checks, made permanent.
+# From now on, `dbt build` runs them automatically on every single run.
+# ============================================================================
+
+version: 2
+
+models:
+  - name: stg_order_items
+    description: >
+      One row per order line item — the revenue grain of the business,
+      per the Kimball Bus Matrix. All revenue, margin and returns maths
+      hangs off this model.
+    columns:
+      - name: order_item_id
+        description: Primary key. One per order line.
+        tests:
+          - unique        # ← your audit query #1 (COUNT = COUNT DISTINCT), forever
+          - not_null
+      - name: status
+        description: Line-item lifecycle state. Drives gross vs net revenue.
+        tests:
+          - accepted_values:
+              values: ['Shipped', 'Complete', 'Returned', 'Cancelled', 'Processing']
+              # ⚠️ built from the source audit — if the source system ever adds
+              # a new status, this test FAILS and forces us to consciously
+              # decide how it maps to gross/net revenue. That's the point.
+      - name: order_id
+        tests:
+          - not_null
+          - relationships:        # every line item must belong to a real order
+              to: ref('stg_orders')
+              field: order_id
+      - name: product_id
+        tests:
+          - relationships:        # and to a real product (no orphan SKUs)
+              to: ref('stg_products')
+              field: product_id
+      - name: customer_id
+        tests:
+          - relationships:
+              to: ref('stg_users')
+              field: customer_id
+
+  - name: stg_orders
+    description: One row per order header. Future-dated synthetic rows removed.
+    columns:
+      - name: order_id
+        description: Primary key. One per order.
+        tests:
+          - unique
+          - not_null
+      - name: customer_id
+        tests:
+          - relationships:
+              to: ref('stg_users')
+              field: customer_id
+
+  - name: stg_products
+    description: The product catalogue. One row per SKU.
+    columns:
+      - name: product_id
+        tests: [unique, not_null]
+
+  - name: stg_users
+    description: >
+      Customer dimension, full history. PII-minimised: names, addresses and
+      raw emails never leave staging; email is hashed for joinability.
+    columns:
+      - name: customer_id
+        tests: [unique, not_null]
+
+  - name: stg_inventory_items
+    description: One row per physical stock unit, receipt to sale.
+    columns:
+      - name: inventory_item_id
+        tests: [unique, not_null]
+
+  - name: stg_events
+    description: One row per clickstream event. IP addresses dropped (GDPR).
+    columns:
+      - name: event_id
+        tests: [unique, not_null]
+
+  - name: stg_distribution_centers
+    description: The fulfilment network. One row per warehouse.
+    columns:
+      - name: distribution_center_id
+        tests: [unique, not_null]

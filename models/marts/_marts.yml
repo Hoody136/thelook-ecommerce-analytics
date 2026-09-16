@@ -1,0 +1,74 @@
+version: 2
+
+models:
+  - name: fct_order_items
+    description: >
+      One row per order item — the revenue grain of the business.
+      All money maths (revenue, cost, profit, margin) and fulfilment
+      outcomes (returns, cancellations, shipping durations) hang off
+      this table. Business logic is computed here, once — never in BI.
+
+    columns:
+      - name: order_item_id
+        description: Primary key — one per order line item.
+        tests:
+          - unique      # THE grain guard. If a join ever fans out,
+          - not_null    # this test is what catches it.
+
+      - name: order_id
+        description: Parent order (FK to a future fct_orders).
+        tests:
+          - not_null
+
+      - name: customer_id
+        description: Who placed the order.
+        tests:
+          - not_null
+          - relationships:        # every item's customer must exist
+              to: ref('stg_users')
+              field: customer_id
+              # NOTE: will repoint to dim_customers once it exists —
+              # tests evolve with the architecture.
+
+      - name: product_id
+        description: What was sold.
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_products')
+              field: product_id
+
+      - name: order_date
+        description: Date of the parent order — the canonical business date.
+        tests:
+          - not_null
+
+      - name: status
+        description: Lifecycle state of the line item.
+        tests:
+          - accepted_values:
+              values: ['Shipped', 'Complete', 'Returned', 'Cancelled', 'Processing']
+
+      - name: sale_price
+        description: Captured revenue for this line.
+
+      - name: product_cost
+        description: Unit cost from the inventory item actually sold.
+
+      - name: gross_profit
+        description: sale_price − product_cost. Computed here, once.
+
+      - name: margin_pct
+        description: gross_profit ÷ sale_price (SAFE_DIVIDE — null on zero price).
+
+      - name: is_returned
+        description: True if the item came back (returned_at is not null).
+
+      - name: is_cancelled
+        description: True if the line was cancelled.
+
+      - name: days_to_ship
+        description: Order date → ship date. Null if not yet shipped.
+
+      - name: days_to_deliver
+        description: Order date → delivery date. Null if not yet delivered.
