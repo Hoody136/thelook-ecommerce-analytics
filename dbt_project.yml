@@ -1,0 +1,35 @@
+# ============================================================================
+# dbt_project.yml — the project's control panel.
+# If this file exists in a folder, dbt treats that folder as a dbt project.
+# ============================================================================
+
+config-version: 2                    # dbt's config file format version. Always 2.
+
+name: thelook_analytics              # The project's internal name. Used to namespace
+                                     # config below. Snake_case, no dashes.
+version: "1.0.0"                     # YOUR project's version. Bump it as it grows.
+
+profile: thelook_ecommerce           # ★ THE LINK: must exactly match the profile name
+                                     # in ~/.dbt/profiles.yml. This is how dbt finds
+                                     # your BigQuery connection.
+
+# --- Where things live (these are all dbt defaults, written out deliberately) ---
+model-paths: ["models"]              # your transformation SQL
+analysis-paths: ["analyses"]         # ad-hoc queries: versioned, never built
+test-paths: ["tests"]                # singular tests (one SQL file = one assertion)
+seed-paths: ["seeds"]                # small CSVs dbt can load as tables
+macro-paths: ["macros"]              # reusable SQL/Jinja functions
+snapshot-paths: ["snapshots"]        # SCD Type 2 history tracking
+target-path: "target"                # where dbt writes compiled SQL + run logs (gitignored)
+clean-targets: ["target", "dbt_packages"]   # what `dbt clean` wipes
+
+# --- The materialization strategy: what each layer BECOMES in BigQuery --------
+models:
+  thelook_analytics:                 # must match `name:` above
+    staging:
+      +materialized: view            # cleaning layer: cheap, always fresh, zero storage
+    intermediate:
+      +materialized: ephemeral       # back-room prep: compiled INTO downstream models
+                                     # as CTEs — never exists as a table at all
+    marts:
+      +materialized: table           # the shop floor: physical tables, fast for BI

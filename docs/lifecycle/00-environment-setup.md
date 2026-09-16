@@ -2,8 +2,7 @@
 
 **Date:** September 2026 · **Status:** Complete · **Stage in lifecycle:** Pre-work (before Stage 1: Sources)
 
-This document records how the development environment for this project was
-actually set up — including the deviations from the original plan and why they
+This document records how the development environment for this project was set up — including the deviations from the original plan and why they
 happened. Written as a reference for anyone (including future me) rebuilding
 this environment from scratch.
 
@@ -83,4 +82,4 @@ this environment from scratch.
 
 BigQuery free tier (1 TiB queries / 10 GiB storage per month) comfortably
 covers this project. Regardless, raw data will be date-bounded to 2024-onward
-at ingestion — cost discipline is a design decision, not a reaction to a bill.
+at ingestion. Cost discipline is a design decision.
