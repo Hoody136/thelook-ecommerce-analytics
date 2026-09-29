@@ -1,64 +1,62 @@
-
-
 version: 2
 
 models:
   - name: stg_thelook__users
-    description: this table houses user information, One row per registered user - identity, geography, acquisition source, signup date.
-    columns: 
+    description: One row per registered user - identity, geography, acquisition source, signup date.
+    columns:
       - name: user_id
-        description: Unique identifier for each user.
+        description: Primary key. One row per user.
         data_tests:
-         - unique
-         - not_null
+          - unique
+          - not_null
 
   - name: stg_thelook__products
-    description: this table houses product information, One row per product - name, category, retail_price. It also has cost, useful for profitability calculations.
+    description: One row per product - name, category, retail_price. Also has cost, useful for profitability calculations.
     columns:
       - name: product_id
-        description: unique identifier for each product.
+        description: Primary key. One row per product.
         data_tests:
           - unique
-          - not_null  
+          - not_null
 
   - name: stg_thelook__orders
-    description: this table houses order information, one row per order. It also contains user id, order status etc. It doesn't contain the value of the order - a join is needed for that. 
+    description: One row per order. Contains user_id, status, and lifecycle timestamps. Order value requires a join to order_items.
     columns:
       - name: order_id
-        description: unique identifier for each order.
+        description: Primary key. One row per order.
         data_tests:
           - unique
-          - not_null  
+          - not_null
       - name: user_id
-        description: unique identifier for each user.
+        description: Foreign key to users.
       - name: number_of_items
-        description: number of items in the order.
+        description: Number of items in the order.
       - name: status
-        description: status of an order. It can be processing, shipped, complete, cancelled or returned.
+        description: Order status - Processing, Shipped, Complete, Cancelled or Returned.
         data_tests:
           - accepted_values:
               arguments:
                 values: ['Processing', 'Shipped', 'Complete', 'Cancelled', 'Returned']
 
   - name: stg_thelook__order_items
-    description: this table houses order information, but at a granular level - one row per order line item. It contains the product id, order id, user id, sale price etc.
+    description: One row per order line item - the individual lines on a customer's receipt. Contains order_id, product_id, user_id, sale_price and lifecycle timestamps.
     columns:
       - name: order_item_id
-        description: unique identifier for each order item - the individual lines on a customers receipt.
+        description: Primary key. One row per order line.
         data_tests:
           - unique
           - not_null
       - name: status
-        description: status of an order. It can be processing, shipped, complete, cancelled or returned. 
+        description: Line status - Processing, Shipped, Complete, Cancelled or Returned.
       - name: order_id
         description: Foreign key to orders.
         data_tests:
+          # A prior extract of this source had 71 orphan order_items; verified clean
+          # against bigquery-public-data (query in README). Kept at error severity.
           - relationships:
               arguments:
                 to: ref('stg_thelook__orders')
                 field: order_id
-              config:
-                severity: warn
       - name: product_id
         description: Foreign key to products.
         data_tests:
@@ -66,9 +64,8 @@ models:
               arguments:
                 to: ref('stg_thelook__products')
                 field: product_id
-            
       - name: inventory_item_id
-        description: Foreign key to the physical stock unit sold. Bridges sale_price to unit cost — the margin path.
+        description: Foreign key to the physical stock unit sold. Bridges sale_price to unit cost - the margin path.
         data_tests:
           - relationships:
               arguments:
@@ -76,10 +73,10 @@ models:
                 field: inventory_item_id
 
   - name: stg_thelook__inventory_items
-    description: this table houses inventory item information. Cost, product_id, category, brand, name, sku number etc.
-    columns: 
+    description: One row per physical stock unit. Cost, product_id, category, brand, name, sku. sold_at NULL = still in stock.
+    columns:
       - name: inventory_item_id
-        description: unique identifier for each inventory item. It is the primary key for this table.
+        description: Primary key. One row per physical unit.
         data_tests:
           - unique
           - not_null
@@ -87,31 +84,25 @@ models:
         description: When this unit sold. NULL = still in stock.
 
   - name: stg_thelook__events
-    description: this table houses event information. It contains information about user interactions with the platform.
+    description: One row per user interaction with the platform.
     columns:
       - name: event_id
-        description: unique identifier for each event. It is the primary key for this table.
+        description: Primary key. One row per event.
         data_tests:
           - unique
           - not_null
       - name: sequence_number
-        description: the sequence number of the event in the session. It is used to order events within a session.
+        description: Order of the event within its session.
       - name: session_id
-        description: the session id for the event. It is used to group events within a session.
+        description: Groups events into a session.
       - name: traffic_source
-        description: the source of the traffic for the event. It can be email, adwords, facebook, youtube and organic.
+        description: Source of the traffic - email, adwords, facebook, youtube or organic.
 
   - name: stg_thelook__distribution_centers
-    description: information about distribution centers. It contains the name, latitude and longitude of the distribution center.
+    description: One row per distribution center - name and location.
     columns:
       - name: distribution_center_id
-        description: unique identifier for each distribution center.
+        description: Primary key. One row per distribution center.
         data_tests:
           - unique
           - not_null
-      - name: name
-        description: the name of the distribution center.
-      - name: latitude
-        description: the latitude of the distribution center.
-      - name: longitude
-        description: the longitude of the distribution center.
