@@ -1,4 +1,117 @@
+
+
 version: 2
 
-# Model documentation and tests are rebuilt by hand in Week 2.
-# (The September versions live in git history for reference.)
+models:
+  - name: stg_thelook__users
+    description: this table houses user information, One row per registered user - identity, geography, acquisition source, signup date.
+    columns: 
+      - name: user_id
+        description: Unique identifier for each user.
+        data_tests:
+         - unique
+         - not_null
+
+  - name: stg_thelook__products
+    description: this table houses product information, One row per product - name, category, retail_price. It also has cost, useful for profitability calculations.
+    columns:
+      - name: product_id
+        description: unique identifier for each product.
+        data_tests:
+          - unique
+          - not_null  
+
+  - name: stg_thelook__orders
+    description: this table houses order information, one row per order. It also contains user id, order status etc. It doesn't contain the value of the order - a join is needed for that. 
+    columns:
+      - name: order_id
+        description: unique identifier for each order.
+        data_tests:
+          - unique
+          - not_null  
+      - name: user_id
+        description: unique identifier for each user.
+      - name: number_of_items
+        description: number of items in the order.
+      - name: status
+        description: status of an order. It can be processing, shipped, complete, cancelled or returned.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['Processing', 'Shipped', 'Complete', 'Cancelled', 'Returned']
+
+  - name: stg_thelook__order_items
+    description: this table houses order information, but at a granular level - one row per order line item. It contains the product id, order id, user id, sale price etc.
+    columns:
+      - name: order_item_id
+        description: unique identifier for each order item - the individual lines on a customers receipt.
+        data_tests:
+          - unique
+          - not_null
+      - name: status
+        description: status of an order. It can be processing, shipped, complete, cancelled or returned. 
+      - name: order_id
+        description: Foreign key to orders.
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('stg_thelook__orders')
+                field: order_id
+              config:
+                severity: warn
+      - name: product_id
+        description: Foreign key to products.
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('stg_thelook__products')
+                field: product_id
+            
+      - name: inventory_item_id
+        description: Foreign key to the physical stock unit sold. Bridges sale_price to unit cost — the margin path.
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('stg_thelook__inventory_items')
+                field: inventory_item_id
+
+  - name: stg_thelook__inventory_items
+    description: this table houses inventory item information. Cost, product_id, category, brand, name, sku number etc.
+    columns: 
+      - name: inventory_item_id
+        description: unique identifier for each inventory item. It is the primary key for this table.
+        data_tests:
+          - unique
+          - not_null
+      - name: sold_at
+        description: When this unit sold. NULL = still in stock.
+
+  - name: stg_thelook__events
+    description: this table houses event information. It contains information about user interactions with the platform.
+    columns:
+      - name: event_id
+        description: unique identifier for each event. It is the primary key for this table.
+        data_tests:
+          - unique
+          - not_null
+      - name: sequence_number
+        description: the sequence number of the event in the session. It is used to order events within a session.
+      - name: session_id
+        description: the session id for the event. It is used to group events within a session.
+      - name: traffic_source
+        description: the source of the traffic for the event. It can be email, adwords, facebook, youtube and organic.
+
+  - name: stg_thelook__distribution_centers
+    description: information about distribution centers. It contains the name, latitude and longitude of the distribution center.
+    columns:
+      - name: distribution_center_id
+        description: unique identifier for each distribution center.
+        data_tests:
+          - unique
+          - not_null
+      - name: name
+        description: the name of the distribution center.
+      - name: latitude
+        description: the latitude of the distribution center.
+      - name: longitude
+        description: the longitude of the distribution center.
